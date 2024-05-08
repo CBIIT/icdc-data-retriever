@@ -1,4 +1,4 @@
-module.exports = Object.freeze({
+export const dataRetrievalConstants = Object.freeze({
   IDC_API_BASE_URL: "https://api.imaging.datacommons.cancer.gov/v1",
   IDC_COLLECTION_BASE_URL:
     "https://portal.imaging.datacommons.cancer.gov/explore/filters/?collection_id=",

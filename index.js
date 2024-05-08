@@ -1,1 +1,3 @@
-console.log("Hello world");
+import mapExternalDataToStudies from "./fetchData.js";
+
+mapExternalDataToStudies();
