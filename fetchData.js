@@ -132,13 +132,11 @@ async function getIcdcStudyData() {
 // }
 
 /**
- *
+ * Iterates a list of TCIA collection names and gets corresponding metadata for each collection.
  *
  * @async
- * @param {Object} parameters - Parameters object.
- * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
- * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
- * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
+ * @param {string[]} tciaCollections - Array of TCIA collection names.
+ * @returns {Promise<Object>} - Promise that resolves with an object containing collection data.
  */
 async function getTciaCollectionsData(tciaCollections) {
   let tciaCollectionsData = {};
@@ -152,12 +150,12 @@ async function getTciaCollectionsData(tciaCollections) {
 }
 
 /**
+ * Maps collection metadata to a specified IDC collection.
  *
- *
- * @param {Object} parameters - Parameters object.
- * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
- * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
- * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
+ * @param {string} collectionId - IDC collection name.
+ * @param {Object[]} idcCollections - An array of IDC collection data objects.
+ * @param {string} icdcStudy - ICDC study name.
+ * @returns {Object} - Object containing metadata for specified IDC collection.
  */
 function getIdcCollectionMetadata(collectionId, idcCollections, icdcStudy) {
   let idcCollectionMetadata = idcCollections.find(
@@ -180,12 +178,12 @@ function getIdcCollectionMetadata(collectionId, idcCollections, icdcStudy) {
 }
 
 /**
+ * Maps collection metadata to a specified TCIA collection.
  *
- *
- * @param {Object} parameters - Parameters object.
- * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
- * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
- * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
+ * @param {string} collectionId - TCIA collection name.
+ * @param {Object[]} tciaCollectionsData - Object containing data for TCIA collections.
+ * @param {string} icdcStudy - ICDC study name.
+ * @returns {Object} - Object containing metadata for specified TCIA collection.
  */
 function getTciaCollectionMetadata(
   collectionId,
@@ -222,13 +220,14 @@ function getTciaCollectionMetadata(
 }
 
 /**
- *
+ * Matches any ICDC-relevant external data to specific ICDC study.
  *
  * @async
- * @param {Object} parameters - Parameters object.
- * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
- * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
- * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
+ * @param {string} icdcStudy - ICDC study name.
+ * @param {Object[]} idcCollections - Array of IDC collection data objects.
+ * @param {string[]} tciaCollections - Array of TCIA collection names.
+ * @param {string} tciaCollectionsData - Object containing data for TCIA collections.
+ * @returns {Promise<Object[]>} - Promise that resolves with array of data collection objects matched to corresponding ICDC study.
  */
 async function mapMatchesToStudy(
   icdcStudy,
@@ -268,7 +267,6 @@ async function mapMatchesToStudy(
       url: "API failed",
     });
   }
-
   if (tciaMatches.length !== 0) {
     for (const match in tciaMatches) {
       if (tciaCollectionsData[tciaMatches[match]]?.length > 0) {
@@ -296,18 +294,18 @@ async function mapMatchesToStudy(
       url: "API failed",
     });
   }
-
   return collectionUrls;
 }
 
 /**
- *
+ * Collects/assembles external data collection metadata and counts for corresponding ICDC studies.
  *
  * @async
- * @param {Object} parameters - Parameters object.
- * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
- * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
- * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
+ * @param {string} icdcStudy - ICDC study name.
+ * @param {Object[]} idcCollections - Array of IDC collection data objects.
+ * @param {string[]} tciaCollections - Array of TCIA collection names.
+ * @param {Object[]} tciaCollectionsData - Object containing data for TCIA collections.
+ * @returns {Promise<Object[]>} - Promise that resolves with an array of external data collection mappings to relevant ICDC studies.
  */
 async function collectMappings(
   icdcStudies,
@@ -340,19 +338,14 @@ async function collectMappings(
  * Maps ICDC-related data from external APIs to corresponding ICDC studies.
  *
  * @async
- * @param {Object} parameters - Parameters object.
- * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
- * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
- * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
+ * @returns {Promise<Object[]>} - Promise that resolves with an array of data collection mappings.
  */
 async function mapExternalDataToStudies() {
   try {
     const icdcStudies = await getIcdcStudyData();
-
     const idcCollections = await getIdcCollections();
     const tciaCollections = await getTciaCollections();
     const tciaCollectionsData = await getTciaCollectionsData(tciaCollections);
-
     const collectionMappings = await collectMappings(
       icdcStudies,
       idcCollections,
