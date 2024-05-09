@@ -261,11 +261,6 @@ async function mapMatchesToStudy(
         metadata: idcCollectionMetadata,
       });
     }
-  } else {
-    collectionUrls.push({
-      repository: "IDC",
-      url: "API failed",
-    });
   }
   if (tciaMatches.length !== 0) {
     for (const match in tciaMatches) {
@@ -281,18 +276,8 @@ async function mapMatchesToStudy(
           url: tciaCollectionUrl,
           metadata: tciaCollectionMetadata,
         });
-      } else {
-        collectionUrls.push({
-          repository: "TCIA",
-          url: "API failed",
-        });
       }
     }
-  } else {
-    collectionUrls.push({
-      repository: "TCIA",
-      url: "API failed",
-    });
   }
   return collectionUrls;
 }
