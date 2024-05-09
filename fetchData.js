@@ -173,7 +173,6 @@ function getIdcCollectionMetadata(collectionId, idcCollections, icdcStudy) {
   } else {
     idcCollectionMetadata["description"] = cleanedDescText;
   }
-  idcCollectionMetadata["__typename"] = "IDCMetadata";
   return idcCollectionMetadata;
 }
 
@@ -210,7 +209,6 @@ function getTciaCollectionMetadata(
     totalImages += 84;
   }
   return {
-    __typename: "TCIAMetadata",
     Collection: collectionId,
     Aggregate_PatientID: totalPatients,
     Aggregate_Modality: uniqueModalities,
