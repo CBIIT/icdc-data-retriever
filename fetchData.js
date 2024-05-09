@@ -112,7 +112,6 @@ async function getIcdcStudyData() {
   }
 }
 
-// refactoring mapExternalDataToStudies to be more modular
 // /**
 //  *
 //  *
@@ -123,7 +122,7 @@ async function getIcdcStudyData() {
 //  */
 // function validateStudyCode(studyCode, icdcStudies) {
 //   if (
-//     studyCode.length >= 0 &&
+//     studyCode.length > 0 &&
 //     !icdcStudies
 //       .map((obj) => obj.clinical_study_designation)
 //       .includes(studyCode)
@@ -132,247 +131,210 @@ async function getIcdcStudyData() {
 //   }
 // }
 
-// /**
-//  *
-//  *
-//  * @async
-//  * @param {Object} parameters - Parameters object.
-//  * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
-//  * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
-//  * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
-//  */
-// async function getTciaCollectionsData(tciaCollections) {
-//   let tciaCollectionsData = {};
-//   for (collection in tciaCollections) {
-//     const tciaCollectionData = await getTciaCollectionData(
-//       tciaCollections[collection]
-//     );
-//     tciaCollectionsData[tciaCollections[collection]] = tciaCollectionData;
-//   }
-//   return tciaCollectionsData;
-// }
+/**
+ *
+ *
+ * @async
+ * @param {Object} parameters - Parameters object.
+ * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
+ * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
+ * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
+ */
+async function getTciaCollectionsData(tciaCollections) {
+  let tciaCollectionsData = {};
+  for (const collection in tciaCollections) {
+    const tciaCollectionData = await getTciaCollectionData(
+      tciaCollections[collection]
+    );
+    tciaCollectionsData[tciaCollections[collection]] = tciaCollectionData;
+  }
+  return tciaCollectionsData;
+}
 
-// /**
-//  *
-//  *
-//  * @param {Object} parameters - Parameters object.
-//  * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
-//  * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
-//  * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
-//  */
-// function getIdcCollectionMetadata(collectionId, idcCollections, icdcStudy) {
-//   let idcCollectionMetadata = idcCollections.find(
-//     (obj) => obj.collection_id === collectionId
-//   );
-//   // handle oddly-formatted response HTML for GLIOMA01
-//   const cleanedDescText = htmlToText(idcCollectionMetadata["description"], {
-//     wordwrap: null,
-//   });
-//   if (icdcStudy.clinical_study_designation === "GLIOMA01") {
-//     idcCollectionMetadata["description"] = cleanedDescText
-//       .replace(/\n\n|\s*\[.*?\]\s*/g, " ")
-//       .replace(/ \./g, ".")
-//       .replace(" ICDC-Glioma", "");
-//   } else {
-//     idcCollectionMetadata["description"] = cleanedDescText;
-//   }
-//   idcCollectionMetadata["__typename"] = "IDCMetadata";
-//   return idcCollectionMetadata;
-// }
+/**
+ *
+ *
+ * @param {Object} parameters - Parameters object.
+ * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
+ * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
+ * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
+ */
+function getIdcCollectionMetadata(collectionId, idcCollections, icdcStudy) {
+  let idcCollectionMetadata = idcCollections.find(
+    (obj) => obj.collection_id === collectionId
+  );
+  // handle oddly-formatted response HTML for GLIOMA01
+  const cleanedDescText = htmlToText(idcCollectionMetadata["description"], {
+    wordwrap: null,
+  });
+  if (icdcStudy.clinical_study_designation === "GLIOMA01") {
+    idcCollectionMetadata["description"] = cleanedDescText
+      .replace(/\n\n|\s*\[.*?\]\s*/g, " ")
+      .replace(/ \./g, ".")
+      .replace(" ICDC-Glioma", "");
+  } else {
+    idcCollectionMetadata["description"] = cleanedDescText;
+  }
+  idcCollectionMetadata["__typename"] = "IDCMetadata";
+  return idcCollectionMetadata;
+}
 
-// /**
-//  *
-//  *
-//  * @param {Object} parameters - Parameters object.
-//  * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
-//  * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
-//  * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
-//  */
-// function getTciaCollectionMetadata(
-//   collectionId,
-//   tciaCollectionsData,
-//   icdcStudy
-// ) {
-//   let tciaCollectionMetadata = tciaCollectionsData[collectionId];
-//   let totalImages = tciaCollectionMetadata.reduce(
-//     (tot, obj) => tot + parseInt(obj.ImageCount),
-//     0
-//   );
-//   const totalPatients = [
-//     ...new Set(tciaCollectionMetadata.map((obj) => obj.PatientID)),
-//   ].length;
-//   const uniqueModalities = [
-//     ...new Set(tciaCollectionMetadata.map((obj) => obj.Modality)),
-//   ];
-//   const uniqueBodypartsExamined = [
-//     ...new Set(tciaCollectionMetadata.map((obj) => obj.BodyPartExamined)),
-//   ];
-//   // hardcode inaccessible TCIA data for GLIOMA01
-//   if (icdcStudy.clinical_study_designation === "GLIOMA01") {
-//     uniqueModalities.push("Histopathology");
-//     totalImages += 84;
-//   }
-//   return {
-//     __typename: "TCIAMetadata",
-//     Collection: collectionId,
-//     Aggregate_PatientID: totalPatients,
-//     Aggregate_Modality: uniqueModalities,
-//     Aggregate_BodyPartExamined: uniqueBodypartsExamined,
-//     Aggregate_ImageCount: totalImages,
-//   };
-// }
+/**
+ *
+ *
+ * @param {Object} parameters - Parameters object.
+ * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
+ * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
+ * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
+ */
+function getTciaCollectionMetadata(
+  collectionId,
+  tciaCollectionsData,
+  icdcStudy
+) {
+  let tciaCollectionMetadata = tciaCollectionsData[collectionId];
+  let totalImages = tciaCollectionMetadata.reduce(
+    (tot, obj) => tot + parseInt(obj.ImageCount),
+    0
+  );
+  const totalPatients = [
+    ...new Set(tciaCollectionMetadata.map((obj) => obj.PatientID)),
+  ].length;
+  const uniqueModalities = [
+    ...new Set(tciaCollectionMetadata.map((obj) => obj.Modality)),
+  ];
+  const uniqueBodypartsExamined = [
+    ...new Set(tciaCollectionMetadata.map((obj) => obj.BodyPartExamined)),
+  ];
+  // hardcode inaccessible TCIA data for GLIOMA01
+  if (icdcStudy.clinical_study_designation === "GLIOMA01") {
+    uniqueModalities.push("Histopathology");
+    totalImages += 84;
+  }
+  return {
+    __typename: "TCIAMetadata",
+    Collection: collectionId,
+    Aggregate_PatientID: totalPatients,
+    Aggregate_Modality: uniqueModalities,
+    Aggregate_BodyPartExamined: uniqueBodypartsExamined,
+    Aggregate_ImageCount: totalImages,
+  };
+}
 
-// /**
-//  *
-//  *
-//  * @async
-//  * @param {Object} parameters - Parameters object.
-//  * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
-//  * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
-//  * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
-//  */
-// async function mapMatchesToStudy(
-//   icdcStudy,
-//   idcCollections,
-//   tciaCollections,
-//   tciaCollectionsData
-// ) {
-//   let collectionUrls = [];
+/**
+ *
+ *
+ * @async
+ * @param {Object} parameters - Parameters object.
+ * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
+ * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
+ * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
+ */
+async function mapMatchesToStudy(
+  icdcStudy,
+  idcCollections,
+  tciaCollections,
+  tciaCollectionsData
+) {
+  let collectionUrls = [];
 
-//   // fuzzy match strings using damerau-levenshtein distance
-//   let idcMatches = search(
-//     icdcStudy.clinical_study_designation,
-//     idcCollections.map((obj) => obj.collection_id)
-//   );
-//   let tciaMatches = search(
-//     icdcStudy.clinical_study_designation,
-//     tciaCollections
-//   );
+  // fuzzy match strings using damerau-levenshtein distance
+  let idcMatches = search(
+    icdcStudy.clinical_study_designation,
+    idcCollections.map((obj) => obj.collection_id)
+  );
+  let tciaMatches = search(
+    icdcStudy.clinical_study_designation,
+    tciaCollections
+  );
 
-//   if (idcMatches.length !== 0) {
-//     for (match in idcMatches) {
-//       const idcCollectionUrl = `${IDC_COLLECTION_BASE_URL}${idcMatches[match]}`;
-//       const idcCollectionMetadata = await getIdcCollectionMetadata(
-//         idcMatches[match],
-//         idcCollections,
-//         icdcStudy
-//       );
-//       collectionUrls.push({
-//         repository: "IDC",
-//         url: idcCollectionUrl,
-//         metadata: idcCollectionMetadata,
-//       });
-//     }
-//   } else {
-//     collectionUrls.push({
-//       repository: "IDC",
-//       url: idcCollectionUrl,
-//       metadata: idcCollectionMetadata,
-//     });
-//   }
+  if (idcMatches.length !== 0) {
+    for (const match in idcMatches) {
+      const idcCollectionUrl = `${IDC_COLLECTION_BASE_URL}${idcMatches[match]}`;
+      const idcCollectionMetadata = await getIdcCollectionMetadata(
+        idcMatches[match],
+        idcCollections,
+        icdcStudy
+      );
+      collectionUrls.push({
+        repository: "IDC",
+        url: idcCollectionUrl,
+        metadata: idcCollectionMetadata,
+      });
+    }
+  } else {
+    collectionUrls.push({
+      repository: "IDC",
+      url: "API failed",
+    });
+  }
 
-//   if (tciaMatches.length !== 0) {
-//     for (match in tciaMatches) {
-//       if (tciaCollectionsData[tciaMatches[match]]?.length > 0) {
-//         const tciaCollectionUrl = `${TCIA_COLLECTION_BASE_URL}${tciaMatches[match]}`;
-//         let tciaCollectionMetadata = await getTciaCollectionMetadata(
-//           tciaMatches[match],
-//           tciaCollectionsData,
-//           icdcStudy
-//         );
-//         collectionUrls.push({
-//           repository: "TCIA",
-//           url: tciaCollectionUrl,
-//           metadata: tciaCollectionMetadata,
-//         });
-//       } else {
-//         collectionUrls.push({
-//           repository: "TCIA",
-//           url: "API failed",
-//         });
-//       }
-//     }
-//   } else {
-//     collectionUrls.push({
-//       repository: "TCIA",
-//       url: "API failed",
-//     });
-//   }
+  if (tciaMatches.length !== 0) {
+    for (const match in tciaMatches) {
+      if (tciaCollectionsData[tciaMatches[match]]?.length > 0) {
+        const tciaCollectionUrl = `${TCIA_COLLECTION_BASE_URL}${tciaMatches[match]}`;
+        let tciaCollectionMetadata = await getTciaCollectionMetadata(
+          tciaMatches[match],
+          tciaCollectionsData,
+          icdcStudy
+        );
+        collectionUrls.push({
+          repository: "TCIA",
+          url: tciaCollectionUrl,
+          metadata: tciaCollectionMetadata,
+        });
+      } else {
+        collectionUrls.push({
+          repository: "TCIA",
+          url: "API failed",
+        });
+      }
+    }
+  } else {
+    collectionUrls.push({
+      repository: "TCIA",
+      url: "API failed",
+    });
+  }
 
-//   return collectionUrls;
-// }
+  return collectionUrls;
+}
 
-// /**
-//  *
-//  *
-//  * @async
-//  * @param {Object} parameters - Parameters object.
-//  * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
-//  * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
-//  * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
-//  */
-// async function collectMappings(
-//   icdcStudies,
-//   idcCollections,
-//   tciaCollections,
-//   tciaCollectionsData,
-//   studyCode = ""
-// ) {
-//   const collectionMappings = [];
-//   for (study in icdcStudies) {
-//     const collectionUrls = await mapMatchesToStudy(
-//       icdcStudies[study],
-//       idcCollections,
-//       tciaCollections,
-//       tciaCollectionsData
-//     );
-//     if (studyCode && studyCode === study.clinical_study_designation) {
-//       return collectionUrls;
-//     }
-//     if (icdcStudies[study]?.numberOfCRDCNodes > 0) {
-//       collectionMappings.push({
-//         CRDCLinks: collectionUrls,
-//         numberOfCRDCNodes: icdcStudies[study]?.numberOfCRDCNodes,
-//         numberOfImageCollections: icdcStudies[study]?.numberOfImageCollections,
-//         clinical_study_designation:
-//           icdcStudies[study]?.clinical_study_designation,
-//       });
-//     }
-//   }
-//   return collectionMappings;
-// }
-
-// /**
-//  * Maps ICDC-related data from external APIs to corresponding ICDC studies.
-//  *
-//  * @async
-//  * @param {Object} parameters - Parameters object.
-//  * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
-//  * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
-//  * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
-//  */
-// async function mapExternalDataToIcdcStudies(studyCode = "") {
-//   try {
-//     const icdcStudies = await getIcdcStudyData();
-//     validateStudyCode(studyCode, icdcStudies);
-
-//     const idcCollections = await getIdcCollections();
-//     const tciaCollections = await getTciaCollections();
-//     const tciaCollectionsData = await getTciaCollectionsData(tciaCollections);
-
-//     const collectionMappings = await collectMappings(
-//       icdcStudies,
-//       idcCollections,
-//       tciaCollections,
-//       tciaCollectionsData,
-//       studyCode
-//     );
-//     return collectionMappings;
-//   } catch (error) {
-//     console.error(error);
-//     return error;
-//   }
-// }
+/**
+ *
+ *
+ * @async
+ * @param {Object} parameters - Parameters object.
+ * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
+ * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
+ * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
+ */
+async function collectMappings(
+  icdcStudies,
+  idcCollections,
+  tciaCollections,
+  tciaCollectionsData
+) {
+  const collectionMappings = [];
+  for (const study in icdcStudies) {
+    const collectionUrls = await mapMatchesToStudy(
+      icdcStudies[study],
+      idcCollections,
+      tciaCollections,
+      tciaCollectionsData
+    );
+    if (icdcStudies[study]?.numberOfCRDCNodes > 0) {
+      collectionMappings.push({
+        CRDCLinks: collectionUrls,
+        numberOfCRDCNodes: icdcStudies[study]?.numberOfCRDCNodes,
+        numberOfImageCollections: icdcStudies[study]?.numberOfImageCollections,
+        clinical_study_designation:
+          icdcStudies[study]?.clinical_study_designation,
+      });
+    }
+  }
+  return collectionMappings;
+}
 
 /**
  * Maps ICDC-related data from external APIs to corresponding ICDC studies.
@@ -383,149 +345,180 @@ async function getIcdcStudyData() {
  * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
  * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
  */
-async function mapExternalDataToStudies(studyCode = "") {
+async function mapExternalDataToStudies() {
   try {
     const icdcStudies = await getIcdcStudyData();
-    if (
-      studyCode.length > 0 &&
-      !icdcStudies
-        .map((obj) => obj.clinical_study_designation)
-        .includes(studyCode)
-    ) {
-      throw new Error(errorName.STUDY_CODE_NOT_FOUND);
-    }
 
     const idcCollections = await getIdcCollections();
     const tciaCollections = await getTciaCollections();
+    const tciaCollectionsData = await getTciaCollectionsData(tciaCollections);
 
-    let tciaCollectionsData = {};
-    let collectionMappings = [];
-
-    for (const collection in tciaCollections) {
-      const tciaCollectionData = await getTciaCollectionData(
-        tciaCollections[collection]
-      );
-      tciaCollectionsData[tciaCollections[collection]] = tciaCollectionData;
-    }
-
-    for (const study in icdcStudies) {
-      // fuzzy match strings using damerau-levenshtein distance
-      let idcMatches = search(
-        icdcStudies[study]?.clinical_study_designation,
-        idcCollections.map((obj) => obj.collection_id)
-      );
-      let tciaMatches = search(
-        icdcStudies[study]?.clinical_study_designation,
-        tciaCollections
-      );
-
-      let collectionUrls = [];
-
-      if (idcMatches.length !== 0) {
-        for (const match in idcMatches) {
-          const idcCollectionUrl = `${IDC_COLLECTION_BASE_URL}${idcMatches[match]}`;
-          let idcCollectionMetadata = idcCollections.find(
-            (obj) => obj.collection_id === idcMatches[match]
-          );
-          const cleanedDescText = htmlToText(
-            idcCollectionMetadata["description"],
-            { wordwrap: null }
-          );
-          // handle oddly-formatted response HTML for GLIOMA01
-          if (icdcStudies[study]?.clinical_study_designation === "GLIOMA01") {
-            idcCollectionMetadata["description"] = cleanedDescText
-              .replace(/\n\n|\s*\[.*?\]\s*/g, " ")
-              .replace(/ \./g, ".")
-              .replace(" ICDC-Glioma", "");
-          } else {
-            idcCollectionMetadata["description"] = cleanedDescText;
-          }
-          idcCollectionMetadata["__typename"] = "IDCMetadata";
-          collectionUrls.push({
-            repository: "IDC",
-            url: idcCollectionUrl,
-            metadata: idcCollectionMetadata,
-          });
-        }
-      } else {
-        collectionUrls.push({
-          repository: "IDC",
-          url: "API failed",
-        });
-      }
-      if (tciaMatches.length !== 0) {
-        for (const match in tciaMatches) {
-          if (tciaCollectionsData[tciaMatches[match]]?.length > 0) {
-            const tciaCollectionUrl = `${TCIA_COLLECTION_BASE_URL}${tciaMatches[match]}`;
-            let tciaCollectionMetadata =
-              tciaCollectionsData[tciaMatches[match]];
-            let totalImages = tciaCollectionMetadata.reduce(
-              (tot, obj) => tot + parseInt(obj.ImageCount),
-              0
-            );
-            const totalPatients = [
-              ...new Set(tciaCollectionMetadata.map((obj) => obj.PatientID)),
-            ].length;
-            const uniqueModalities = [
-              ...new Set(tciaCollectionMetadata.map((obj) => obj.Modality)),
-            ];
-            const uniqueBodypartsExamined = [
-              ...new Set(
-                tciaCollectionMetadata.map((obj) => obj.BodyPartExamined)
-              ),
-            ];
-            // hardcode inaccessible TCIA data for GLIOMA01
-            if (icdcStudies[study]?.clinical_study_designation === "GLIOMA01") {
-              uniqueModalities.push("Histopathology");
-              totalImages += 84;
-            }
-            collectionUrls.push({
-              repository: "TCIA",
-              url: tciaCollectionUrl,
-              metadata: {
-                __typename: "TCIAMetadata",
-                Collection: tciaMatches[match],
-                Aggregate_PatientID: totalPatients,
-                Aggregate_Modality: uniqueModalities,
-                Aggregate_BodyPartExamined: uniqueBodypartsExamined,
-                Aggregate_ImageCount: totalImages,
-              },
-            });
-          } else {
-            collectionUrls.push({
-              repository: "TCIA",
-              url: "API failed",
-            });
-          }
-        }
-      } else {
-        collectionUrls.push({
-          repository: "TCIA",
-          url: "API failed",
-        });
-      }
-      if (
-        studyCode &&
-        studyCode === icdcStudies[study]?.clinical_study_designation
-      ) {
-        return collectionUrls;
-      }
-      if (icdcStudies[study]?.numberOfCRDCNodes > 0) {
-        collectionMappings.push({
-          CRDCLinks: collectionUrls,
-          numberOfCRDCNodes: icdcStudies[study]?.numberOfCRDCNodes,
-          numberOfImageCollections:
-            icdcStudies[study]?.numberOfImageCollections,
-          clinical_study_designation:
-            icdcStudies[study]?.clinical_study_designation,
-        });
-      }
-    }
+    const collectionMappings = await collectMappings(
+      icdcStudies,
+      idcCollections,
+      tciaCollections,
+      tciaCollectionsData
+    );
     return collectionMappings;
   } catch (error) {
     console.error(error);
     return error;
   }
 }
+
+// /**
+//  * Maps ICDC-related data from external APIs to corresponding ICDC studies.
+//  *
+//  * @async
+//  * @param {Object} parameters - Parameters object.
+//  * @param {string} parameters.study_code - (Optional) ICDC study code by which to filter collections.
+//  * @returns {Promise<Object[]>} - Promise that resolves with an array of collection mappings.
+//  * @throws {Error} - Throws error if provided study code is not found in ICDC studies data.
+//  */
+// async function mapExternalDataToStudies(studyCode = "") {
+//   try {
+//     const icdcStudies = await getIcdcStudyData();
+//     if (
+//       studyCode.length > 0 &&
+//       !icdcStudies
+//         .map((obj) => obj.clinical_study_designation)
+//         .includes(studyCode)
+//     ) {
+//       throw new Error(errorName.STUDY_CODE_NOT_FOUND);
+//     }
+
+//     const idcCollections = await getIdcCollections();
+//     const tciaCollections = await getTciaCollections();
+
+//     let tciaCollectionsData = {};
+//     let collectionMappings = [];
+
+//     for (const collection in tciaCollections) {
+//       const tciaCollectionData = await getTciaCollectionData(
+//         tciaCollections[collection]
+//       );
+//       tciaCollectionsData[tciaCollections[collection]] = tciaCollectionData;
+//     }
+
+//     for (const study in icdcStudies) {
+//       // fuzzy match strings using damerau-levenshtein distance
+//       let idcMatches = search(
+//         icdcStudies[study]?.clinical_study_designation,
+//         idcCollections.map((obj) => obj.collection_id)
+//       );
+//       let tciaMatches = search(
+//         icdcStudies[study]?.clinical_study_designation,
+//         tciaCollections
+//       );
+
+//       let collectionUrls = [];
+
+//       if (idcMatches.length !== 0) {
+//         for (const match in idcMatches) {
+//           const idcCollectionUrl = `${IDC_COLLECTION_BASE_URL}${idcMatches[match]}`;
+//           let idcCollectionMetadata = idcCollections.find(
+//             (obj) => obj.collection_id === idcMatches[match]
+//           );
+//           const cleanedDescText = htmlToText(
+//             idcCollectionMetadata["description"],
+//             { wordwrap: null }
+//           );
+//           // handle oddly-formatted response HTML for GLIOMA01
+//           if (icdcStudies[study]?.clinical_study_designation === "GLIOMA01") {
+//             idcCollectionMetadata["description"] = cleanedDescText
+//               .replace(/\n\n|\s*\[.*?\]\s*/g, " ")
+//               .replace(/ \./g, ".")
+//               .replace(" ICDC-Glioma", "");
+//           } else {
+//             idcCollectionMetadata["description"] = cleanedDescText;
+//           }
+//           idcCollectionMetadata["__typename"] = "IDCMetadata";
+//           collectionUrls.push({
+//             repository: "IDC",
+//             url: idcCollectionUrl,
+//             metadata: idcCollectionMetadata,
+//           });
+//         }
+//       } else {
+//         collectionUrls.push({
+//           repository: "IDC",
+//           url: "API failed",
+//         });
+//       }
+//       if (tciaMatches.length !== 0) {
+//         for (const match in tciaMatches) {
+//           if (tciaCollectionsData[tciaMatches[match]]?.length > 0) {
+//             const tciaCollectionUrl = `${TCIA_COLLECTION_BASE_URL}${tciaMatches[match]}`;
+//             let tciaCollectionMetadata =
+//               tciaCollectionsData[tciaMatches[match]];
+//             let totalImages = tciaCollectionMetadata.reduce(
+//               (tot, obj) => tot + parseInt(obj.ImageCount),
+//               0
+//             );
+//             const totalPatients = [
+//               ...new Set(tciaCollectionMetadata.map((obj) => obj.PatientID)),
+//             ].length;
+//             const uniqueModalities = [
+//               ...new Set(tciaCollectionMetadata.map((obj) => obj.Modality)),
+//             ];
+//             const uniqueBodypartsExamined = [
+//               ...new Set(
+//                 tciaCollectionMetadata.map((obj) => obj.BodyPartExamined)
+//               ),
+//             ];
+//             // hardcode inaccessible TCIA data for GLIOMA01
+//             if (icdcStudies[study]?.clinical_study_designation === "GLIOMA01") {
+//               uniqueModalities.push("Histopathology");
+//               totalImages += 84;
+//             }
+//             collectionUrls.push({
+//               repository: "TCIA",
+//               url: tciaCollectionUrl,
+//               metadata: {
+//                 __typename: "TCIAMetadata",
+//                 Collection: tciaMatches[match],
+//                 Aggregate_PatientID: totalPatients,
+//                 Aggregate_Modality: uniqueModalities,
+//                 Aggregate_BodyPartExamined: uniqueBodypartsExamined,
+//                 Aggregate_ImageCount: totalImages,
+//               },
+//             });
+//           } else {
+//             collectionUrls.push({
+//               repository: "TCIA",
+//               url: "API failed",
+//             });
+//           }
+//         }
+//       } else {
+//         collectionUrls.push({
+//           repository: "TCIA",
+//           url: "API failed",
+//         });
+//       }
+//       if (
+//         studyCode &&
+//         studyCode === icdcStudies[study]?.clinical_study_designation
+//       ) {
+//         return collectionUrls;
+//       }
+//       if (icdcStudies[study]?.numberOfCRDCNodes > 0) {
+//         collectionMappings.push({
+//           CRDCLinks: collectionUrls,
+//           numberOfCRDCNodes: icdcStudies[study]?.numberOfCRDCNodes,
+//           numberOfImageCollections:
+//             icdcStudies[study]?.numberOfImageCollections,
+//           clinical_study_designation:
+//             icdcStudies[study]?.clinical_study_designation,
+//         });
+//       }
+//     }
+//     console.log(JSON.stringify(collectionMappings));
+//     return collectionMappings;
+//   } catch (error) {
+//     console.error(error);
+//     return error;
+//   }
+// }
 
 export default mapExternalDataToStudies;
