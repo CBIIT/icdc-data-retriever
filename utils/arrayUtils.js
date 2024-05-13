@@ -11,20 +11,3 @@ export function filterObjectArray(array, property, key) {
     return obj[property].includes(key);
   });
 }
-
-/**
- * Filters an array of objects by selecting only specified properties.
- *
- * @param {Object[]} array - Array of objects to filter.
- * @param {string[]} targetProps - Array of property names to include in the filtered objects.
- * @returns {Object[]} - Array containing filtered objects with only the specified properties.
- */
-export function filterObjectArrayByProps(array, targetProps) {
-  return array.map((item) =>
-    Object.keys(item)
-      .filter((key) => targetProps.includes(key))
-      .reduce((obj, key) => {
-        return Object.assign(obj, { [key]: item[key] });
-      }, {})
-  );
-}
