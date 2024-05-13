@@ -323,4 +323,15 @@ async function mapExternalDataToStudies() {
   }
 }
 
-export default mapExternalDataToStudies;
+export default {
+  getIdcCollections,
+  getTciaCollections,
+  getTciaCollectionData,
+  getTciaCollectionsData,
+  getIcdcStudyData,
+  getIdcCollectionMetadata,
+  getTciaCollectionMetadata,
+  mapMatchesToStudy,
+  collectMappings,
+  mapExternalDataToStudies,
+};
